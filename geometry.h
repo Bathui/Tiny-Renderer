@@ -70,7 +70,7 @@ class Vec3{
             return std::sqrt(x*x+y*y+z*z);
         }
         Vec3<t>& normalized(){
-            *this = *this * 1/norm();
+            *this = *this * (1/norm());
             return *this;
         }        
         friend std::ostream& operator<< (std::ostream& os, Vec3<t> v){
