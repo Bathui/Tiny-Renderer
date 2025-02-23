@@ -1,0 +1,28 @@
+// for (int i = 0; i < model->num_faces(); i++) { 
+	// 	std::vector<int> face = model->face(i);
+	// 	// std::cout<<(model->face(0))[6]<<std::endl;
+	// 	for (int j = 0; j < 3; j++) {
+	// 		vec3f v0 = model->vert(face[j*3]);
+	// 		vec3f v1 = model->vert(face[(j+1)%3*3]);
+	// 		int x0 = (v0.X() + 1.) * width/2.;
+	// 		int x1 = (v1.X() + 1.) * width/2.;
+	// 		int y0 = (v0.Y() + 1.) * height/2.;
+	// 		int y1 = (v1.Y() + 1.) * height/2.;
+	// 		line(x0, y0, x1, y1, image, white);
+	// 	}
+	// }
+    
+    // for(int i = 0; i < model->num_faces(); i++){
+    //     std::vector<int> face = model->face(i);
+    //     vec2i screen[3];
+
+    //     for (int j = 0; j < 3; j++) {
+    //         vec3f world = model->vert(face[j*3]);
+    //         screen[j].x = (world.x + 1.) * width / 2.;
+    //         screen[j].y = (world.y + 1.) * height / 2.;
+
+    //     }   
+        
+    //     triangle(screen, image, TGAColor(rand()%256, rand()%256, rand()%256, 255));        
+
+    // }
