@@ -30,7 +30,7 @@ Model::Model(const char* fileName){
             int ver, tex, normal;
             std::vector<int> vec;
             
-            while(ss>>ver>>trash>>tex>>trash>>normal){ //follow the obj file fornmat
+            while(ss>>ver>>trash>>tex>>trash>>normal){ //follow the obj file format
                 vec.push_back(ver-1);
                 vec.push_back(tex-1);
                 vec.push_back(normal-1);
