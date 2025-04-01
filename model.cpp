@@ -24,6 +24,12 @@ Model::Model(const char* fileName){
             ss>>v.x>>v.y>>v.z;
             verts.push_back(v);
         }
+        
+        if(s[0] == 'v' && s[1] == 't' && s[2] == ' '){
+            vec3f vtx;
+            ss>>vtx.x>>vtx.y>>vtx.z;
+            text_verts.push_back(vtx);
+        }
 
         if (s[0] == 'f' && s[1] == ' ') {
             // std::cout<<"check"<<std::endl;
@@ -54,6 +60,10 @@ int Model::num_faces(){
 
 vec3f Model::vert(int i){
     return verts[i];
+}
+
+vec3f Model::text_vert(int i){
+    return text_verts[i];    
 }
 
 std::vector<int> Model::face(int i){

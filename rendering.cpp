@@ -43,7 +43,7 @@ vec3f baryCentric(vec3f* vertices, vec3f p){
     return vec3f(1.f-(coefficient.x+coefficient.y)/coefficient.z, coefficient.y/coefficient.z, coefficient.x/coefficient.z); // return the barycentric coefficient
 }
 
-void triangle(vec3f* pts, float* zbuffer, TGAImage& img, TGAColor color){
+void triangle(vec3f* pts, float* zbuffer, float intensity, TGAImage& img, vec3f tex_coord[], TGAImage& texture){
     vec2f boxmin( width,  height);
     vec2f boxmax(0, 0);
 
@@ -58,24 +58,49 @@ void triangle(vec3f* pts, float* zbuffer, TGAImage& img, TGAColor color){
     }
     
     vec3f inter_points;
+	
+
     for(inter_points.x = boxmin.x; inter_points.x<= boxmax.x; inter_points.x++) {
-        for(inter_points.y = boxmin.y; inter_points.y<= boxmax.y; inter_points.y++){
+		for(inter_points.y = boxmin.y; inter_points.y<= boxmax.y; inter_points.y++){
+			vec3f inter_colors = vec3f(0, 0, 0);
             vec3f coefficient = baryCentric(pts, inter_points);
             if(coefficient.x < 0 ||coefficient.y < 0|| coefficient.z < 0)
                 continue; //there are some points not in our simplex, so we need to skip those points
             inter_points.z = 0;
 			for(int i = 0; i < 3; i++){
-				if(i==0)
+				if(i==0){
 					inter_points.z += (pts[i].z* coefficient.x);
-				else if(i==1)
+
+					inter_colors.x += (tex_coord[i].x* coefficient.x);
+					inter_colors.y += (tex_coord[i].y* coefficient.x);
+					inter_colors.z += (tex_coord[i].z* coefficient.x);
+				}
+				else if(i==1){
 					inter_points.z += (pts[i].z* coefficient.y);
-				else if(i==2)
+					
+					inter_colors.x += (tex_coord[i].x* coefficient.y);
+					inter_colors.y += (tex_coord[i].y* coefficient.y);
+					inter_colors.z += (tex_coord[i].z* coefficient.y);
+				}
+				else if(i==2){
 					inter_points.z += (pts[i].z* coefficient.z);
+					
+					inter_colors.x += (tex_coord[i].x* coefficient.z);
+					inter_colors.y += (tex_coord[i].y* coefficient.z);
+					inter_colors.z += (tex_coord[i].z* coefficient.z);
+				}
 				else;	
 			}
 			if (zbuffer[int(inter_points.x + inter_points.y * width)] < inter_points.z) {
 				zbuffer[int(inter_points.x + inter_points.y * width)] = inter_points.z;
-				img.set(inter_points.x, inter_points.y, color);
+				TGAColor color = texture.get(inter_colors.x * texture.get_width(), inter_colors.y * texture.get_height());
+				color.a = 255;
+				color.r *= intensity;
+				color.g *= intensity;
+				color.b *= intensity;
+				
+				
+				img.set(inter_points.x, inter_points.y, color);//should fix
 			}
         }
     }

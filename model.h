@@ -7,6 +7,7 @@ class Model
 {
     private:
         std::vector<vec3f> verts;
+        std::vector<vec3f> text_verts;
         std::vector<std::vector<int>> faces;
     public:
         Model(const char* fileName);
@@ -16,6 +17,7 @@ class Model
         int num_faces();
 
         vec3f vert(int i);
+        vec3f text_vert(int i);
         std::vector<int> face(int i);
 };
 #endif  
