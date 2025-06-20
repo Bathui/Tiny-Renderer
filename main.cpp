@@ -14,10 +14,9 @@ int main(int argc, char** argv) {
 		name = argv[1];
 	}
 	TGAImage image(width, height, TGAImage::RGB);
-	Model* model = new Model("african_head.obj");
+	Model* model = new Model("texture/african_head.obj");// african_head_diffuse
 	// a new change
 	TGAImage texture;
-	texture.read_tga_file("texture/african_head_diffuse.tga");
 	texture.flip_vertically();
 
     std::cout<<model->num_verts()<<std::endl;
@@ -31,23 +30,25 @@ int main(int argc, char** argv) {
         vec3f world[3];
         vec3f screen[3];
 		//might have mistakes from here
-		vec3f tex_coord[3];
-        std::vector<int> face = model->face(i);
+		vec2f uvs[3];
 
+        std::vector<int> face = model->face(i);
+		
         for(int j = 0; j < 3; j++) {
-			tex_coord[j] = model->text_vert(face[3*j + 1]);
 			
-			tex_coord[j].x *= texture.get_width();
-			tex_coord[j].y *= texture.get_height();
+			// tex_coord[j].x *= texture.get_width();
+			// tex_coord[j].y *= texture.get_height();
 
             world[j] = model->vert(face[3*j]);
             screen[j] = vec3f(int((world[j].x + 1.) * width / 2 + 0.5), int((world[j].y + 1.) * height / 2+0.5), world[j].Z());  
-        }
+			uvs[j] = model->uv(i, j);
+		}
         
 		vec3f normal = (world[2] - world[0]) ^ (world[1] - world[0]);
         normal.normalized();
         float intensity = normal * light_direction;
-
+		
+		
         if(intensity > 0){
 			// TGAColor color[3];
 			
@@ -56,7 +57,8 @@ int main(int argc, char** argv) {
 			// }
 
             // triangle(screen, zbuffer, image, TGAColor(255*intensity, 255*intensity, 255*intensity, 255));
-			triangle(screen, zbuffer, intensity, image, tex_coord, texture);
+
+			rasterize(screen, zbuffer, intensity, image, uvs, texture, *model);
 		}
     }
 	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
