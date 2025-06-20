@@ -14,9 +14,11 @@ int main(int argc, char** argv) {
 		name = argv[1];
 	}
 	TGAImage image(width, height, TGAImage::RGB);
-	Model* model = new Model("african_head.obj");
-	// Model* model = new Model("sample.obj");
-	// std::cout<<model->num_faces()<<std::endl;
+	Model* model = new Model("texture/african_head.obj");// african_head_diffuse
+	// a new change
+	TGAImage texture;
+	texture.flip_vertically();
+
     std::cout<<model->num_verts()<<std::endl;
 	float* zbuffer = new float[width*height];
 	//set default values for z-buffer
@@ -27,20 +29,37 @@ int main(int argc, char** argv) {
     for (int i = 0; i < model->num_faces(); i++) {
         vec3f world[3];
         vec3f screen[3];
-        std::vector<int> face = model->face(i);
+		//might have mistakes from here
+		vec2f uvs[3];
 
+        std::vector<int> face = model->face(i);
+		
         for(int j = 0; j < 3; j++) {
+			
+			// tex_coord[j].x *= texture.get_width();
+			// tex_coord[j].y *= texture.get_height();
+
             world[j] = model->vert(face[3*j]);
             screen[j] = vec3f(int((world[j].x + 1.) * width / 2 + 0.5), int((world[j].y + 1.) * height / 2+0.5), world[j].Z());  
-        }
+			uvs[j] = model->uv(i, j);
+		}
         
 		vec3f normal = (world[2] - world[0]) ^ (world[1] - world[0]);
         normal.normalized();
         float intensity = normal * light_direction;
+		
+		
+        if(intensity > 0){
+			// TGAColor color[3];
+			
+			// for(int k = 0; k < 3; k++){
+			// 	color[k] = texture.get(tex_coord[k].x, tex_coord[k].y);//need to fix
+			// }
 
-        if(intensity > 0)
-            triangle(screen, zbuffer, image, TGAColor(255*intensity, 255*intensity, 255*intensity, 255));
-        
+            // triangle(screen, zbuffer, image, TGAColor(255*intensity, 255*intensity, 255*intensity, 255));
+
+			rasterize(screen, zbuffer, intensity, image, uvs, texture, *model);
+		}
     }
 	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
 	image.write_tga_file(name);
