@@ -31,14 +31,18 @@ class Vec2{  // a 2d vector
 typedef Vec2<float> vec2f;
 typedef Vec2<int>   vec2i;
 
-template <typename t>
+template <class t>
 class Vec3{
     
     public:
         t x, y, z;
         Vec3():x(0), y(0), z(0){}
         Vec3(t x, t y, t z):x(x), y(y), z(z){}
-
+        Vec3<t> (const Vec3<t>& v): x(v.x), y(v.y), z(v.z){ *this = v;}
+        // The case of same types for parameter and return type, we use above one
+        // because compiler prefer the one with fixed type.
+        template <class u> 
+        Vec3<t>(const Vec3<u> & v);
         t X(){
             return x;
         }
@@ -81,4 +85,25 @@ class Vec3{
 typedef Vec3<float> vec3f;
 typedef Vec3<int> vec3i;
 
+/////////////////////////////////////////////////////////////////////////////
+const int DEFAULT_ALLOC = 4;
+class Matrix{
+    private:
+        int rows, cols;
+
+    public:
+        std::vector<std::vector<float>> m;
+        Matrix(int r=DEFAULT_ALLOC, int c = DEFAULT_ALLOC);
+        
+        inline int nrows(){return rows;}
+        inline int ncols(){return cols;}
+
+        static Matrix identity(int dimensions);
+        std::vector<float>& operator[] (const int i);
+        Matrix operator* (const Matrix& a);
+        Matrix transpose();
+        Matrix inverse();
+
+        friend std::ostream& operator<<(std::ostream& s, Matrix& m);
+};
 #endif

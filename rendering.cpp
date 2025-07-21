@@ -44,6 +44,36 @@ vec3f baryCentric(vec3f* vertices, vec3f p){
     return vec3f(1.f-(coefficient.x+coefficient.y)/coefficient.z, coefficient.y/coefficient.z, coefficient.x/coefficient.z); // return the barycentric coefficient
 }
 
+vec3f m2v(Matrix m){
+	return vec3f(m[0][0]/m[3][0], m[1][0]/m[3][0], m[2][0]/m[3][0]);
+}
+
+Matrix v2m (vec3f& v) {
+	Matrix m(4, 1);
+	
+	m[0][0] = v.x;
+	m[1][0] = v.y;
+	m[2][0] = v.z;
+
+	m[3][0] = 1;
+
+	return m;
+}
+
+Matrix viewport(int x, int y, int w, int h, int d){
+	Matrix m = Matrix::identity(4);
+	
+	m[0][0] = w/2.f;
+	m[1][1] = h/2.f;
+	m[2][2] = d/2.f;
+
+	m[0][3] = x + w/2.f;
+	m[1][3] = y + h/2.f;
+	m[2][3] = d/2.f;
+
+	return m;	
+}
+
 void rasterize(vec3f* pts, float* zbuffer, float intensity, TGAImage& img, vec2f* tex_coords, TGAImage& texture, Model& model){
     vec2f boxmin( width,  height);
     vec2f boxmax(0, 0);

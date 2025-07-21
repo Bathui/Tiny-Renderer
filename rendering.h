@@ -9,10 +9,9 @@ vec3f baryCentric(vec3f* vertices, vec3f p);
 
 void rasterize(vec3f* pts, float* zbuffer, float intensity, TGAImage& img, vec2f* tex_coords, TGAImage& texture, Model& model);
 
-struct Shader{
-    static TGAColor sample2D (TGAImage& img, vec2f &uvf){
-        return img.get(uvf.x * img.get_width(), uvf.y* img.get_height());
-    }
+vec3f m2v(Matrix m);
 
-};
+Matrix v2m(vec3f& v);
+
+Matrix viewport(int x, int y, int w, int h, int d);
 #endif
