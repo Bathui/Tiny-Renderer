@@ -24,6 +24,6 @@ class Model
         std::vector<int> face(int i);
         // const TGAImage& diffuse() const;
 
-        TGAColor diffuse(vec2f);
+        TGAColor diffuse(vec2f uv);
 };
 #endif  
