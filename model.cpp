@@ -43,7 +43,12 @@ Model::Model(const char* fileName){
             }
 
             faces.push_back(face_data);
-            
+        }
+
+        if (prefix == "vn"){
+            vec3f vn;
+            ss>>vn.x>>vn.y>>vn.z;
+            norms.push_back(vn);
         }
     }
 
@@ -67,6 +72,12 @@ vec2f Model::uv(int iface, int nvert){
     int index = faces[iface][nvert * 3 + 1];
     vec3f v = text_verts[index];
     return vec2f(v.x, v.y);
+}
+
+vec3f Model::norm(int iface, int nvert){
+    int idx = faces[iface][nvert * 3 + 2];
+    vec3f v = norms[idx];
+    return vec3f(v.x, v.y, v.z).normalized();
 }
 
 TGAColor Model::diffuse (vec2f uv){
@@ -96,3 +107,4 @@ vec3f Model::text_vert(int i){
 std::vector<int> Model::face(int i){
     return faces[i];
 }
+

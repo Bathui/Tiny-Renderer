@@ -8,6 +8,7 @@ class Model
     private:
         std::vector<vec3f> verts;
         std::vector<vec3f> text_verts;
+        std::vector<vec3f> norms;
         std::vector<std::vector<int>> faces;
         TGAImage diffusemap = {};
     public:
@@ -20,6 +21,7 @@ class Model
         vec2f uv(int iface, int nvert);
         vec3f vert(int i);
         vec3f text_vert(int i);
+        vec3f norm (int iface, int nvert);
         
         std::vector<int> face(int i);
         // const TGAImage& diffuse() const;

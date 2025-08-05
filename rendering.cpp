@@ -1,7 +1,8 @@
 #include "rendering.h"
-const int width = 2000;
-const int height = 2000;
+const int width = 800;
+const int height = 800;
 const TGAColor white   = {255, 255, 255, 255}; 
+const double diffusion_coeff =  1.5;
 
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) { 
     bool steep = false;
@@ -73,21 +74,44 @@ Matrix viewport(int x, int y, int w, int h, int d){
 	return m;	
 }
 
-void rasterize(vec3i t0, vec3i t1, vec3i t2, vec2f uv0, vec2f uv1, vec2f uv2, float intensity, float *zbuffer, Model* model, TGAImage& img){
+Matrix move_camera(vec3f eye, vec3f center, vec3f up){
+	vec3f z = (eye - center).normalized();
+	vec3f x = (up ^ z).normalized();
+	vec3f y = up.normalized(); // if that does not work, change it afterwards
+
+	Matrix Minv = Matrix::identity(4);
+	Matrix Tr = Matrix::identity(4);
+
+	for (int i = 0; i < 3; i++) {
+		Minv[0][i] = x[i];
+		Minv[1][i] = y[i];
+		Minv[2][i] = z[i];
+		
+		Tr[i][3] = -eye[i]; 
+	}
+
+	Matrix Model_View = Minv * Tr;
+	return Model_View;
+}
+
+void rasterize(vec3i t0, vec3i t1, vec3i t2, vec2f uv0, vec2f uv1, vec2f uv2, float it0, float it1, float it2, float *zbuffer, Model* model, TGAImage& img){
 	if (t0.y == t1.y && t0.y == t2.y)
 		return;
 	
 	if (t0.y > t1.y) {
 		std::swap(t0, t1);
 		std::swap(uv0, uv1);
+		std::swap(it0, it1);
 	}
 	if (t0.y > t2.y) {
 		std::swap(t0, t2);
 		std::swap(uv0, uv2);
+		std::swap(it0, it2);
 	}
 	if (t1.y > t2.y) {
 		std::swap(t1, t2);
 		std::swap(uv1, uv2);
+		std::swap(it1, it2);
 	}
 
 	int max_height = t2.y - t0.y;
@@ -104,9 +128,14 @@ void rasterize(vec3i t0, vec3i t1, vec3i t2, vec2f uv0, vec2f uv1, vec2f uv2, fl
 
 		vec2f uvA = uv0 + vec2f(uv2-uv0) * alpha;
 		vec2f uvB = second_half ? uv1 + vec2f(uv2-uv1)* beta : uv0 + vec2f(uv1 - uv0) * beta;
+
+		float iA = it0 + (it2 - it0) * alpha;
+		float iB = second_half ? it1 + (it2 - it1) * beta : it0 + (it1 - it0) * beta;
+
 		if (A.x > B.x) {
 			std::swap(A, B);
 			std::swap(uvA, uvB);
+			std::swap(iA, iB);
 		}
 
 		for (int j = A.x; j <= B.x; j++) { // start horizontal scanline interpolation
@@ -114,17 +143,18 @@ void rasterize(vec3i t0, vec3i t1, vec3i t2, vec2f uv0, vec2f uv1, vec2f uv2, fl
 			
 			vec3i P = vec3f(A) + vec3f(B-A) * phi;
 			vec2f uvP = uvA + vec2f(uvB - uvA) * phi;
+			float ivP = iA + (iB - iA) * phi;
 
 			int idx = P.x + P.y * width;
 			if (zbuffer[idx] < P.z) {
 				zbuffer[idx] = P.z;
 				TGAColor color = model->diffuse(uvP);
 				// TGAColor color = white;
-
+				
 				color.a = 255;
-				color.r *= intensity;
-				color.g *= intensity;
-				color.b *= intensity;
+				color.r *= (ivP * diffusion_coeff);
+				color.g *= (ivP * diffusion_coeff);
+				color.b *= (ivP * diffusion_coeff);
 
 				img.set(P.x, P.y, color);
 			}

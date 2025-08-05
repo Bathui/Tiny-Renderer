@@ -21,6 +21,12 @@ class Vec2{  // a 2d vector
         inline Vec2<t> operator* (float a){  // scalar product
             return Vec2<t>(x*a, a*y);
         }
+
+        float distance (Vec2<t>& v){
+            float dist = sqrt(pow(v.x - x, 2) + pow(v.y -y, 2));
+            return dist;
+        }
+
         inline t operator* (Vec2<t>& a){
             return x*a.x + y*a.y;
         } // dot product
@@ -68,10 +74,18 @@ class Vec3{
         inline t operator* (Vec3<t>& a){ // dot product
             return x*a.x + y*a.y + z*a.z;
         }
-        inline Vec3<t> operator^ (Vec3<t>&& a){ //cross product
+        inline Vec3<t> operator^ (const Vec3<t>& a){ //cross product
             return Vec3<t>(y*a.z - z*a.y, z*a.x-x*a.z, x*a.y-y*a.x);
         }
-
+        inline float operator[] (int a) {
+            if (a == 0)
+                return x;
+            if (a == 1)
+                return y;
+            if (a == 2)
+                return z;
+            return 0;
+        }
         float norm (){
             return std::sqrt(x*x+y*y+z*z);
         }
@@ -79,6 +93,10 @@ class Vec3{
             *this = *this * (1/norm());
             return *this;
         }        
+        float distance (Vec3<t>& v){
+            float dist = sqrt(pow(v.x - x, 2) + pow(v.y - y, 2) + pow(v.z - z, 2));
+            return dist;
+        }
         friend std::ostream& operator<< (std::ostream& os, Vec3<t> v){
             os<<"("<<v.x <<", "<<v.y<<", "<<v.z<<")\n";
             return os;
