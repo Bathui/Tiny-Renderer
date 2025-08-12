@@ -96,4 +96,3 @@ vec3f Model::text_vert(int i){
 std::vector<int> Model::face(int i){
     return faces[i];
 }
-
