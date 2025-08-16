@@ -3,16 +3,16 @@
 #include "geometry.h"
 
 template <> template<>
-Vec2<int>::Vec2<>(const Vec2<float>& v): x(int(v.x + 0.5)), y(int(v.y + 0.5)) {}
+Vec2<int>::Vec2(const Vec2<float>& v): x(int(v.x + 0.5)), y(int(v.y + 0.5)) {}
 
 template<>template<>
-Vec2<float>::Vec2<>(const Vec2<int>& v):x(v.x), y(v.y){}
+Vec2<float>::Vec2(const Vec2<int>& v):x(v.x), y(v.y){}
 
 template <> template<>
-Vec3<int>::Vec3<>(const Vec3<float>& v): x(int(v.x + 0.5)), y(int(v.y + 0.5)), z(int(v.z + 0.5)) {}
+Vec3<int>::Vec3(const Vec3<float>& v): x(int(v.x + 0.5)), y(int(v.y + 0.5)), z(int(v.z + 0.5)) {}
 
 template<>template<>
-Vec3<float>::Vec3<>(const Vec3<int>& v):x(v.x), y(v.y), z(v.z) {}
+Vec3<float>::Vec3(const Vec3<int>& v):x(v.x), y(v.y), z(v.z) {}
 
 Matrix::Matrix(int r, int c): rows(r), cols(c), m(std::vector<std::vector<float>>(r, std::vector<float>(c, 0.f))){}
 

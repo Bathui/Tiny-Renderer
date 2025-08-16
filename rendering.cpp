@@ -3,7 +3,7 @@ const int width = 800;
 const int height = 800;
 const TGAColor white   = {255, 255, 255, 255}; 
 const double diffusion_coeff =  1.5;
-
+// Shader::~Shader(){}
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) { 
     bool steep = false;
 	if (std::abs(x0-x1) < std::abs(y0-y1)) {
@@ -94,7 +94,15 @@ Matrix move_camera(vec3f eye, vec3f center, vec3f up){
 	return Model_View;
 }
 
-void rasterize(vec3i t0, vec3i t1, vec3i t2, vec2f uv0, vec2f uv1, vec2f uv2, float it0, float it1, float it2, float *zbuffer, Model* model, TGAImage& img){
+void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader, float *zbuffer, Model* model, TGAImage& img){
+	vec3i& t0 = screen[0]; // here we got the problem ~
+	vec3i& t1 = screen[1];
+	vec3i& t2 = screen[2];
+	
+	float it0 = shader.varing_intensity[0];
+	float it1 = shader.varing_intensity[1];
+	float it2 = shader.varing_intensity[2];
+
 	if (t0.y == t1.y && t0.y == t2.y)
 		return;
 	

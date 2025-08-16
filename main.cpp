@@ -1,5 +1,8 @@
 #include "rendering.h"
 #include <cstring>
+/*
+* Plan: 1. Refactor the vertex shader. Fit that into the current main function
+*/
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red   = TGAColor(255, 0,   0,   255);
 
@@ -12,6 +15,24 @@ vec3f center(0, 0, -2);
 vec3f light_direction = vec3f(1,-1,1).normalized();
 vec3f light_source = vec3f(100,100,100);
 
+Model* model = nullptr;
+
+class GouraudShader : public Shader{
+	public:
+
+		vec3f vertex_shader(int iface, int nthvert, Matrix projection, Matrix model_view, Matrix ViewPort){
+			varing_intensity[nthvert] = std::max(model->norm(iface, nthvert) * light_direction, 0.f);
+			
+			std::vector<int> face = model->face(iface);
+			vec3f world = model->vert(face[3*nthvert]);
+			
+			Matrix M = ViewPort * projection * model_view;
+			vec3f screen = m2v(M * v2m(world));
+			
+			return screen;
+		}
+};
+
 // const float diffusion_coef = 0.75;
 
 int main(int argc, char** argv) {
@@ -21,7 +42,6 @@ int main(int argc, char** argv) {
 	const char* specified_obj = nullptr;
 	char prefix[128] = "texture/";
 	
-	Model* model = nullptr;
 
 	if (argc == 1){
 		name = "output.tga";
@@ -37,10 +57,10 @@ int main(int argc, char** argv) {
 		else
 			model = new Model("texture/african_head.obj");
 	}
+	
 	TGAImage image(width, height, TGAImage::RGB);
+	GouraudShader shader; 
 	
-	
-
     std::cout<<model->num_verts()<<std::endl;
 	float* zbuffer = new float[width*height];
 	//set default values for z-buffer
@@ -56,18 +76,19 @@ int main(int argc, char** argv) {
 
 	for (int i = 0; i < model->num_faces(); i++) {
         vec3f world[3];
-        vec3f screen[3];
+        vec3i screen[3];
 		vec2f uvs[3];
         float intensity[3];
 		std::vector<int> face = model->face(i);
 		
         for(int j = 0; j < 3; j++) {
             world[j] = model->vert(face[3*j]);
-            screen[j] = m2v(M*v2m(world[j]));  
+            // screen[j] = m2v(M*v2m(world[j]));  
 			uvs[j] = model->uv(i, j);	
 
-			float dist = light_source.distance(screen[j]);
+			// float dist = light_source.distance(screen[j]);
 			intensity[j] = std::max(model->norm(i, j) * light_direction, 0.f);
+			screen[j] = shader.vertex_shader(i, j, projection, model_view, ViewPort);
 			
 		}
 		
@@ -76,10 +97,10 @@ int main(int argc, char** argv) {
         // normal.normalized();
 		// float flat_intensity = normal * light_direction;
 		
-		rasterize(screen[0], screen[1], screen[2], uvs[0], uvs[1], uvs[2], intensity[0], intensity[1], intensity[2], zbuffer, model, image);
+		rasterize(screen, uvs[0], uvs[1], uvs[2], shader, zbuffer, model, image);
 		
     }
-	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
+	image.flip_vertically(); 
 	image.write_tga_file(name);
 	delete[] zbuffer;
 	delete model;
