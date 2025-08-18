@@ -2,8 +2,13 @@
 const int width = 800;
 const int height = 800;
 const TGAColor white   = {255, 255, 255, 255}; 
-const double diffusion_coeff =  1.5;
+const double diffusion_coeff =  1.3;
 // Shader::~Shader(){}
+/** 
+ * Shader contains the new normal mapping information
+ * Create a new container for the normal mapping in our Model object
+*/
+
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) { 
     bool steep = false;
 	if (std::abs(x0-x1) < std::abs(y0-y1)) {
@@ -94,6 +99,10 @@ Matrix move_camera(vec3f eye, vec3f center, vec3f up){
 	return Model_View;
 }
 
+vec3f color2Vec3(TGAColor& color){
+	return vec3f(color.r, color.g, color.b);  // we extract the rgb value as the diverted result
+}
+
 void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader, float *zbuffer, Model* model, TGAImage& img){
 	vec3i& t0 = screen[0]; // here we got the problem ~
 	vec3i& t1 = screen[1];
@@ -154,11 +163,15 @@ void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader,
 			float ivP = iA + (iB - iA) * phi;
 
 			int idx = P.x + P.y * width;
-			if (zbuffer[idx] < P.z) {
+			bool discard = shader.fragment(zbuffer, P, idx); //need further changes here
+
+			if (!discard) {
 				zbuffer[idx] = P.z;
+				TGAColor normal_div = model->normal_Map(uvP);
+				
 				TGAColor color = model->diffuse(uvP);
 				// TGAColor color = white;
-				
+
 				color.a = 255;
 				color.r *= (ivP * diffusion_coeff);
 				color.g *= (ivP * diffusion_coeff);

@@ -58,11 +58,16 @@ Model::Model(const char* fileName){
         if (dot == std::string::npos)
             return;
         std::string textfile = name.substr(0, dot) + suffix;
-        std::cerr << "texture file" << textfile << " loading " << (img.read_tga_file(textfile.c_str())? "ok":"failed")<<std::endl; 
+        std::cerr << "texture file " << textfile << " loading " << (img.read_tga_file(textfile.c_str())? "ok":"failed")<<std::endl; 
     };
 
+    //load diffuse texture
     load_texture("_diffuse.tga", diffusemap);
     diffusemap.flip_vertically();
+
+    //load normal mapping texture
+    load_texture("_nm.tga", normalmap);
+    normalmap.flip_vertically();
 }
 
 // const TGAImage& Model::diffuse() const{
@@ -85,6 +90,12 @@ TGAColor Model::diffuse (vec2f uv){
     double v = uv.y * diffusemap.get_height();
     return diffusemap.get(u, v);
 } 
+
+TGAColor Model::normal_Map(vec2f uv){
+    double u = uv.x * normalmap.get_width();
+    double v = uv.y * normalmap.get_height();
+    return normalmap.get(u, v);
+}
 
 Model::~Model(){}
 

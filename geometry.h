@@ -106,6 +106,7 @@ typedef Vec3<float> vec3f;
 typedef Vec3<int> vec3i;
 
 /////////////////////////////////////////////////////////////////////////////
+
 const int DEFAULT_ALLOC = 4;
 class Matrix{
     private:

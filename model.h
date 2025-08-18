@@ -10,7 +10,9 @@ class Model
         std::vector<vec3f> text_verts;
         std::vector<vec3f> norms;
         std::vector<std::vector<int>> faces;
+        
         TGAImage diffusemap = {};
+        TGAImage normalmap = {};
     public:
         Model(const char* fileName);
         ~Model();
@@ -27,5 +29,6 @@ class Model
         // const TGAImage& diffuse() const;
 
         TGAColor diffuse(vec2f uv);
+        TGAColor normal_Map(vec2f uv);
 };
 #endif  

@@ -1,8 +1,6 @@
 #include "rendering.h"
 #include <cstring>
-/*
-* Plan: 1. Refactor the vertex shader. Fit that into the current main function
-*/
+
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red   = TGAColor(255, 0,   0,   255);
 
@@ -12,7 +10,7 @@ const int depth = 255;
 
 vec3f camera(0.25, 0.25, 0.75); // set our camera
 vec3f center(0, 0, -2);
-vec3f light_direction = vec3f(1,-1,1).normalized();
+vec3f light_direction = vec3f(0,0,2).normalized();
 vec3f light_source = vec3f(100,100,100);
 
 Model* model = nullptr;
@@ -30,6 +28,11 @@ class GouraudShader : public Shader{
 			vec3f screen = m2v(M * v2m(world));
 			
 			return screen;
+		}
+		bool fragment(float* zbuffer, vec3f P, int idx){
+			if (zbuffer[idx] < P.z)	
+				return false;	
+			return true;
 		}
 };
 
@@ -61,7 +64,6 @@ int main(int argc, char** argv) {
 	TGAImage image(width, height, TGAImage::RGB);
 	GouraudShader shader; 
 	
-    std::cout<<model->num_verts()<<std::endl;
 	float* zbuffer = new float[width*height];
 	//set default values for z-buffer
 	for (int i=width*height-1; i>=0; i--)
@@ -78,16 +80,13 @@ int main(int argc, char** argv) {
         vec3f world[3];
         vec3i screen[3];
 		vec2f uvs[3];
-        float intensity[3];
 		std::vector<int> face = model->face(i);
 		
         for(int j = 0; j < 3; j++) {
             world[j] = model->vert(face[3*j]);
             // screen[j] = m2v(M*v2m(world[j]));  
 			uvs[j] = model->uv(i, j);	
-
 			// float dist = light_source.distance(screen[j]);
-			intensity[j] = std::max(model->norm(i, j) * light_direction, 0.f);
 			screen[j] = shader.vertex_shader(i, j, projection, model_view, ViewPort);
 			
 		}
