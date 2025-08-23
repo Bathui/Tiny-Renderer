@@ -100,7 +100,9 @@ Matrix move_camera(vec3f eye, vec3f center, vec3f up){
 }
 
 vec3f color2Vec3(TGAColor& color){
-	return vec3f(color.r, color.g, color.b);  // we extract the rgb value as the diverted result
+	return vec3f(color.r/255.f * 2.f - 1.f, 
+				color.g/255.f * 2.f - 1.f, 
+				color.b/255.f * 2.f - 1.f);  // we extract the rgb value as the diverted result
 }
 
 void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader, float *zbuffer, Model* model, TGAImage& img){
@@ -167,7 +169,6 @@ void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader,
 
 			if (!discard) {
 				zbuffer[idx] = P.z;
-				TGAColor normal_div = model->normal_Map(uvP);
 				
 				TGAColor color = model->diffuse(uvP);
 				// TGAColor color = white;

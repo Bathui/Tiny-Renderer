@@ -10,7 +10,7 @@ vec3f baryCentric(vec3f* vertices, vec3f p);
 class Shader{
     public:
         float* varing_intensity = new float [3];
-        virtual vec3f vertex_shader(int iface, int nthvert, Matrix projection, Matrix model_view, Matrix ViewPort) = 0;
+        virtual vec3f vertex_shader(int iface, int nthvert, vec3f normal_vert, Matrix projection, Matrix model_view, Matrix ViewPort) = 0;
         // virtual 
         
         virtual bool fragment(float* zbuffer, vec3f P, int idx) = 0;
@@ -33,5 +33,5 @@ Matrix move_camera (vec3f eye, vec3f center, vec3f up) ;
 
 vec3f color2Vec3(TGAColor& color);
 
-vec3f normal_mapping();
+
 #endif

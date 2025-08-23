@@ -1,6 +1,9 @@
 #include "rendering.h"
 #include <cstring>
-
+/**
+ * Mark of getting new basis
+ * 1. we do not need to use the normal from the original obj. Just use the one from the new normal mapping tga
+ */
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red   = TGAColor(255, 0,   0,   255);
 
@@ -18,8 +21,9 @@ Model* model = nullptr;
 class GouraudShader : public Shader{
 	public:
 
-		vec3f vertex_shader(int iface, int nthvert, Matrix projection, Matrix model_view, Matrix ViewPort){
-			varing_intensity[nthvert] = std::max(model->norm(iface, nthvert) * light_direction, 0.f);
+		vec3f vertex_shader(int iface, int nthvert, vec3f normal_coord, Matrix projection, Matrix model_view, Matrix ViewPort){
+
+			varing_intensity[nthvert] = std::max(normal_coord * light_direction, 0.f);
 			
 			std::vector<int> face = model->face(iface);
 			vec3f world = model->vert(face[3*nthvert]);
@@ -34,6 +38,24 @@ class GouraudShader : public Shader{
 				return false;	
 			return true;
 		}
+		
+		// vec3f norm_Map(vec3f surface_norm, vec3f& p0, vec3f& p1, vec3f& p2, vec3f& b){
+		// 	Matrix A = Matrix::identity(3);
+			
+
+		// 	vec3f p0p1 = p1 - p0;
+		// 	vec3f p1p2 = p2 - p1;
+		// 	vec3f p0p2 = p2 - p0;
+
+		// 	A[0][0] = p0p1.x; A[0][1] = p0p1.y; A[0][2] = p0p1.z;
+		// 	A[1][0] = p0p2.x; A[1][1] = p0p2.y; A[1][2] = p0p2.z;
+		// 	A[2][0] = surface_norm.x; A[2][1] = surface_norm.y; A[2][2] = surface_norm.z;
+
+		// 	Matrix A_inverse = A.inverse();
+		// 	Matrix res = A_inverse * v2m(b);
+			
+		// 	return vec3f(res[0][0], res[1][0], res[2][0]);
+		// }
 };
 
 // const float diffusion_coef = 0.75;
@@ -82,12 +104,17 @@ int main(int argc, char** argv) {
 		vec2f uvs[3];
 		std::vector<int> face = model->face(i);
 		
+		Matrix A = Matrix::identity(3);
         for(int j = 0; j < 3; j++) {
             world[j] = model->vert(face[3*j]);
             // screen[j] = m2v(M*v2m(world[j]));  
 			uvs[j] = model->uv(i, j);	
 			// float dist = light_source.distance(screen[j]);
-			screen[j] = shader.vertex_shader(i, j, projection, model_view, ViewPort);
+			TGAColor normal_color = model->normal_Map(uvs[j]);
+			vec3f normal_coord = color2Vec3(normal_color);
+
+			screen[j] = shader.vertex_shader(i, j, normal_coord, projection, model_view, ViewPort);
+			
 			
 		}
 		
