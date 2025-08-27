@@ -124,7 +124,7 @@ class Matrix{
         Matrix operator* (const Matrix& a);
         Matrix transpose();
         Matrix inverse();
-
+        Matrix inverse_transpose();
         friend std::ostream& operator<<(std::ostream& s, Matrix& m);
 };
 #endif

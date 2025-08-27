@@ -66,7 +66,8 @@ Model::Model(const char* fileName){
     diffusemap.flip_vertically();
 
     //load normal mapping texture
-    load_texture("_nm.tga", normalmap);
+    // load_texture("_nm.tga", normalmap);
+    load_texture("_nm_tangent.tga", normalmap);
     normalmap.flip_vertically();
 }
 

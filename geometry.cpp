@@ -73,18 +73,18 @@ Matrix Matrix::inverse(){
     }
     // Following is to augment the identity matrix
     for (int i = 0; i < rows; i++) {
-        result[i][rows + i] = 1;
+        result[i][cols + i] = 1;
     }
 
     // forward elimination
-    for (int i = 0; i < rows-1; i++) {
-        for (int j = 0; j < result.cols; j++) {
+    for (int i=0; i<rows-1; i++) {
+        // normalize the first row
+        for(int j=result.cols-1; j>=0; j--)
             result[i][j] /= result[i][i];
-        }
-        for (int k = i+1; k < rows; k++) {
-            float coefficient = result[k][i];
-            for (int j = 0; j < result.cols; j++) {
-                result[k][j] -= coefficient * result[i][j];
+        for (int k=i+1; k<rows; k++) {
+            float coeff = result[k][i];
+            for (int j=0; j<result.cols; j++) {
+                result[k][j] -= result[i][j]*coeff;
             }
         }
     }
@@ -114,6 +114,10 @@ Matrix Matrix::inverse(){
     }
 
     return truncate;
+}
+
+Matrix Matrix::inverse_transpose(){
+    return inverse().transpose();
 }
 
 std::ostream& operator<<(std::ostream& s, Matrix& m){

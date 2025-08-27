@@ -10,13 +10,18 @@ vec3f baryCentric(vec3f* vertices, vec3f p);
 class Shader{
     public:
         float* varing_intensity = new float [3];
+        vec3f* normals = new vec3f[3];
+        vec3f* ndc_coord = new vec3f[3];
+
         virtual vec3f vertex_shader(int iface, int nthvert, Matrix projection, Matrix model_view, Matrix ViewPort) = 0;
         // virtual 
         
-        virtual bool fragment(float* zbuffer, vec3f P, int idx) = 0;
+        virtual bool fragment(vec2f uvP, vec3f nmA, vec3f nmB, float* zbuffer, vec3f P, int idx, float phi, TGAColor& color, vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2) = 0;
 
         virtual ~Shader(){
             delete[] varing_intensity;
+            delete[] normals;
+            delete[] ndc_coord;
         }
 };
 
@@ -33,5 +38,8 @@ Matrix move_camera (vec3f eye, vec3f center, vec3f up) ;
 
 vec3f color2Vec3(TGAColor& color);
 
-vec3f normal_mapping();
+vec3f new_basis(Matrix& Ainv, float f0, float f1, float f2);
+
+vec3f Darboux2World(vec3f new_x, vec3f new_y, vec3f new_z, vec3f normal_coord);
+
 #endif

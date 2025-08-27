@@ -1,6 +1,6 @@
 #include "rendering.h"
-const int width = 800;
-const int height = 800;
+const int width = 2000;
+const int height = 2000;
 const TGAColor white   = {255, 255, 255, 255}; 
 const double diffusion_coeff =  1.3;
 // Shader::~Shader(){}
@@ -99,8 +99,22 @@ Matrix move_camera(vec3f eye, vec3f center, vec3f up){
 	return Model_View;
 }
 
+vec3f new_basis(Matrix& Ainv, float f0, float f1, float f2){
+	Matrix B (3, 1);
+	B[0][0] = f1-f0; B[1][0] = f2 - f0; B[2][0] = 0;
+	Matrix res = Ainv * B;
+	return vec3f(res[0][0], res[1][0], res[2][0]).normalized();
+}
+
 vec3f color2Vec3(TGAColor& color){
-	return vec3f(color.r, color.g, color.b);  // we extract the rgb value as the diverted result
+	return vec3f(color.r/255.f * 2.f - 1.f, 
+				color.g/255.f * 2.f - 1.f, 
+				color.b/255.f * 2.f - 1.f);  // we extract the rgb value as the diverted result
+}
+
+vec3f Darboux2World(vec3f new_x, vec3f new_y, vec3f new_z, vec3f normal_coord){
+	vec3f world = new_x * normal_coord.x + new_y * normal_coord.y + new_z * normal_coord.z;
+	return world.normalized();
 }
 
 void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader, float *zbuffer, Model* model, TGAImage& img){
@@ -108,9 +122,6 @@ void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader,
 	vec3i& t1 = screen[1];
 	vec3i& t2 = screen[2];
 	
-	float it0 = shader.varing_intensity[0];
-	float it1 = shader.varing_intensity[1];
-	float it2 = shader.varing_intensity[2];
 
 	if (t0.y == t1.y && t0.y == t2.y)
 		return;
@@ -118,17 +129,23 @@ void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader,
 	if (t0.y > t1.y) {
 		std::swap(t0, t1);
 		std::swap(uv0, uv1);
-		std::swap(it0, it1);
+		std::swap(shader.ndc_coord[0], shader.ndc_coord[1]);
+		std::swap(shader.normals[0], shader.normals[1]);
+		// std::swap(it0, it1);
 	}
 	if (t0.y > t2.y) {
 		std::swap(t0, t2);
 		std::swap(uv0, uv2);
-		std::swap(it0, it2);
+		std::swap(shader.ndc_coord[0], shader.ndc_coord[2]);
+		std::swap(shader.normals[0], shader.normals[2]);
+		// std::swap(it0, it2);
 	}
 	if (t1.y > t2.y) {
 		std::swap(t1, t2);
 		std::swap(uv1, uv2);
-		std::swap(it1, it2);
+		std::swap(shader.ndc_coord[1], shader.ndc_coord[2]);
+		std::swap(shader.normals[1], shader.normals[2]);
+		// std::swap(it1, it2);
 	}
 
 	int max_height = t2.y - t0.y;
@@ -146,13 +163,18 @@ void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader,
 		vec2f uvA = uv0 + vec2f(uv2-uv0) * alpha;
 		vec2f uvB = second_half ? uv1 + vec2f(uv2-uv1)* beta : uv0 + vec2f(uv1 - uv0) * beta;
 
-		float iA = it0 + (it2 - it0) * alpha;
-		float iB = second_half ? it1 + (it2 - it1) * beta : it0 + (it1 - it0) * beta;
+		// float iA = it0 + (it2 - it0) * alpha;
+		// float iB = second_half ? it1 + (it2 - it1) * beta : it0 + (it1 - it0) * beta;
+
+		vec3f nmA = shader.normals[0] + vec3f(shader.normals[2]-shader.normals[0]) * alpha;
+		vec3f nmB = second_half ? shader.normals[1] + vec3f(shader.normals[2]-shader.normals[1]) * beta : shader.normals[0] +vec3f(shader.normals[1]-shader.normals[0]) * beta;
+
 
 		if (A.x > B.x) {
 			std::swap(A, B);
 			std::swap(uvA, uvB);
-			std::swap(iA, iB);
+			// std::swap(iA, iB);
+			std::swap(nmA, nmB);
 		}
 
 		for (int j = A.x; j <= B.x; j++) { // start horizontal scanline interpolation
@@ -160,22 +182,15 @@ void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader,
 			
 			vec3i P = vec3f(A) + vec3f(B-A) * phi;
 			vec2f uvP = uvA + vec2f(uvB - uvA) * phi;
-			float ivP = iA + (iB - iA) * phi;
+			// float ivP = iA + (iB - iA) * phi;
+			TGAColor color = model->diffuse(uvP);
 
 			int idx = P.x + P.y * width;
-			bool discard = shader.fragment(zbuffer, P, idx); //need further changes here
-
+			bool discard = shader.fragment(uvP, nmA, nmB, zbuffer, P, idx, phi, color, screen, uv0, uv1, uv2); //need further changes here
+			// std::cout<<discard<<std::endl;
 			if (!discard) {
 				zbuffer[idx] = P.z;
-				TGAColor normal_div = model->normal_Map(uvP);
-				
-				TGAColor color = model->diffuse(uvP);
-				// TGAColor color = white;
-
-				color.a = 255;
-				color.r *= (ivP * diffusion_coeff);
-				color.g *= (ivP * diffusion_coeff);
-				color.b *= (ivP * diffusion_coeff);
+			    // std::cout<<(int)color.r<<" "<<(int)color.g<<" "<<(int)color.b<<std::endl;
 
 				img.set(P.x, P.y, color);
 			}

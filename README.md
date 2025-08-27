@@ -1,4 +1,10 @@
-# Followings are the progress records of the project
+## Progress Tracker of the project
+
+## Normal Mapping in Darboux frame
+<div style="display: flex; gap: 20px;">
+    <img src ="result/normal_map_darboux.png" alt="Normal Mapping" width="400">
+    <img src ="result/diablo_nm.png" alt="Normal Mapping" width="350">
+</div>
 
 ## Gouraud Shading with moving camera
 <div style="display: flex; gap: 20px;">
