@@ -68,10 +68,14 @@ class Vec3{
         inline Vec3<t> operator- (const Vec3<t>& a){
             return Vec3<t>(x-a.x, y-a.y, z-a.z);
         }
-        inline Vec3<t> operator* (t a){  // scalar product
+        inline  Vec3<t> operator* (t a){  // scalar product
             return Vec3<t>(x*a, a*y, a*z);
         }
-        inline t operator* (Vec3<t>& a){ // dot product
+        friend inline Vec3<t> operator* (t a, const Vec3<t>& b){  // scalar product
+            return Vec3<t>(b.x*a, a*b.y, a*b.z);
+        }
+
+        inline  t operator* (const Vec3<t>& a){ // dot product
             return x*a.x + y*a.y + z*a.z;
         }
         inline Vec3<t> operator^ (const Vec3<t>& a){ //cross product

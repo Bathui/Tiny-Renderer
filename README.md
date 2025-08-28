@@ -1,4 +1,10 @@
-## Progress Tracker of the project
+# Progress Tracker of the project
+
+## Adding Specular and Ambient terms
+<div style="display: flex; gap: 20px;">
+    <img src ="result/with_specular.png" alt="Normal Mapping" width="400">
+    <img src ="result/with_specular_diab.png" alt="Normal Mapping" width="350">
+</div>
 
 ## Normal Mapping in Darboux frame
 <div style="display: flex; gap: 20px;">

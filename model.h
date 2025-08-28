@@ -12,7 +12,9 @@ class Model
         std::vector<std::vector<int>> faces;
         
         TGAImage diffusemap = {};
-        TGAImage normalmap = {};
+        TGAImage specularmap = {};
+        TGAImage normalmap = {};       
+
     public:
         Model(const char* fileName);
         ~Model();
@@ -30,5 +32,6 @@ class Model
 
         TGAColor diffuse(vec2f uv);
         TGAColor normal_Map(vec2f uv);
+        TGAColor specular(vec2f uv);
 };
 #endif  

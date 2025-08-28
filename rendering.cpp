@@ -3,7 +3,6 @@ const int width = 2000;
 const int height = 2000;
 const TGAColor white   = {255, 255, 255, 255}; 
 const double diffusion_coeff =  1.3;
-// Shader::~Shader(){}
 /** 
  * Shader contains the new normal mapping information
  * Create a new container for the normal mapping in our Model object
@@ -131,21 +130,18 @@ void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader,
 		std::swap(uv0, uv1);
 		std::swap(shader.ndc_coord[0], shader.ndc_coord[1]);
 		std::swap(shader.normals[0], shader.normals[1]);
-		// std::swap(it0, it1);
 	}
 	if (t0.y > t2.y) {
 		std::swap(t0, t2);
 		std::swap(uv0, uv2);
 		std::swap(shader.ndc_coord[0], shader.ndc_coord[2]);
 		std::swap(shader.normals[0], shader.normals[2]);
-		// std::swap(it0, it2);
 	}
 	if (t1.y > t2.y) {
 		std::swap(t1, t2);
 		std::swap(uv1, uv2);
 		std::swap(shader.ndc_coord[1], shader.ndc_coord[2]);
 		std::swap(shader.normals[1], shader.normals[2]);
-		// std::swap(it1, it2);
 	}
 
 	int max_height = t2.y - t0.y;
@@ -163,9 +159,6 @@ void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader,
 		vec2f uvA = uv0 + vec2f(uv2-uv0) * alpha;
 		vec2f uvB = second_half ? uv1 + vec2f(uv2-uv1)* beta : uv0 + vec2f(uv1 - uv0) * beta;
 
-		// float iA = it0 + (it2 - it0) * alpha;
-		// float iB = second_half ? it1 + (it2 - it1) * beta : it0 + (it1 - it0) * beta;
-
 		vec3f nmA = shader.normals[0] + vec3f(shader.normals[2]-shader.normals[0]) * alpha;
 		vec3f nmB = second_half ? shader.normals[1] + vec3f(shader.normals[2]-shader.normals[1]) * beta : shader.normals[0] +vec3f(shader.normals[1]-shader.normals[0]) * beta;
 
@@ -173,7 +166,6 @@ void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader,
 		if (A.x > B.x) {
 			std::swap(A, B);
 			std::swap(uvA, uvB);
-			// std::swap(iA, iB);
 			std::swap(nmA, nmB);
 		}
 
@@ -182,16 +174,12 @@ void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader,
 			
 			vec3i P = vec3f(A) + vec3f(B-A) * phi;
 			vec2f uvP = uvA + vec2f(uvB - uvA) * phi;
-			// float ivP = iA + (iB - iA) * phi;
 			TGAColor color = model->diffuse(uvP);
 
 			int idx = P.x + P.y * width;
 			bool discard = shader.fragment(uvP, nmA, nmB, zbuffer, P, idx, phi, color, screen, uv0, uv1, uv2); //need further changes here
-			// std::cout<<discard<<std::endl;
 			if (!discard) {
 				zbuffer[idx] = P.z;
-			    // std::cout<<(int)color.r<<" "<<(int)color.g<<" "<<(int)color.b<<std::endl;
-
 				img.set(P.x, P.y, color);
 			}
 		}

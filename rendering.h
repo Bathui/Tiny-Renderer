@@ -25,8 +25,6 @@ class Shader{
         }
 };
 
-// void rasterize(vec3f screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader, float *zbuffer, Model* model, TGAImage& img);
-// void rasterize(vec3f screen[3], vec2f uv0, vec2f uv1, vec2f uv2, float it0, float it1, float it2, Shader& shader, float *zbuffer, Model* model, TGAImage& img);
 void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader, float *zbuffer, Model* model, TGAImage& img);
 vec3f m2v(Matrix m);
 

@@ -12,7 +12,7 @@ const double diffusion_coeff =  1.3;
 
 vec3f camera(0.25, 0.25, 0.75); // set our camera
 vec3f center(0, 0, -2);
-vec3f light_direction = vec3f(1,1,1).normalized();
+vec3f light_direction = vec3f(0,0,1).normalized();
 vec3f light_source = vec3f(100,100,100);
 
 Model* model = nullptr;
@@ -30,6 +30,7 @@ class GouraudShader : public Shader{
 			ndc_coord[nthvert] = m2v(projection * model_view * v2m(world));
 			return screen;
 		}
+
 		bool fragment(vec2f uvP, vec3f nmA, vec3f nmB, float* zbuffer, vec3f P, int idx, float phi,  TGAColor& color, vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2){	
 			if (zbuffer[idx] >= P.z)	
 				return true;
@@ -49,12 +50,17 @@ class GouraudShader : public Shader{
 			vec3f new_z = nmP;
 
 			vec3f real_normal = color2Vec3(normal_color);
-			real_normal = (new_x * real_normal.x + new_y * real_normal.y + new_z * real_normal.z).normalized();
-			float intensity = std::max(real_normal * light_direction, 0.f);
+			real_normal = Darboux2World(new_x, new_y, new_z, real_normal);
+
+			vec3f reflection = (2.0f * (real_normal * light_direction * real_normal) - light_direction).normalized();
+			float diff = std::max(real_normal * light_direction, 0.f);
 			
-			color.r *= (intensity * diffusion_coeff);
-			color.g *= (intensity * diffusion_coeff);
-			color.b *= (intensity * diffusion_coeff);
+			float spec = std::pow(std::max(reflection.z, 0.f), std::max(float(model->specular(uvP).b), 30.f));
+
+			color.r = (unsigned char)std::min(0.5 + color.r * (diff * diffusion_coeff) + color.r * 0.6 * spec, 255.0);
+			color.g = (unsigned char) std::min(0.5 + color.g * (diff * diffusion_coeff) + color.g * 0.6 * spec, 255.0);
+			color.b = (unsigned char) std::min(0.5 + color.b * (diff * diffusion_coeff) + color.b * 0.6 * spec, 255.0);
+
 	
 			return false;
 		}

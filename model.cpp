@@ -69,6 +69,10 @@ Model::Model(const char* fileName){
     // load_texture("_nm.tga", normalmap);
     load_texture("_nm_tangent.tga", normalmap);
     normalmap.flip_vertically();
+
+    //load specular texture
+    load_texture("_spec.tga", specularmap);
+    specularmap.flip_vertically();
 }
 
 // const TGAImage& Model::diffuse() const{
@@ -96,6 +100,12 @@ TGAColor Model::normal_Map(vec2f uv){
     double u = uv.x * normalmap.get_width();
     double v = uv.y * normalmap.get_height();
     return normalmap.get(u, v);
+}
+
+TGAColor Model::specular(vec2f uv){
+    double u = uv.x * specularmap.get_width();
+    double v = uv.y * specularmap.get_height();
+    return specularmap.get(u, v);
 }
 
 Model::~Model(){}
