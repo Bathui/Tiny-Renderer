@@ -13,9 +13,36 @@ const double diffusion_coeff =  1.3;
 vec3f camera(0.25, 0.25, 0.75); // set our camera
 vec3f center(0, 0, -2);
 vec3f light_direction = vec3f(0,0,1).normalized();
-vec3f light_source = vec3f(100,100,100);
 
 Model* model = nullptr;
+
+class DepthShader : public Shader{
+	public:
+		vec3f vertex_shader(int iface, int nthvert, Matrix projection, Matrix model_view, Matrix ViewPort){
+			std::vector<int> face = model->face(iface);
+			vec3f world = model->vert(face[3*nthvert]);
+			Matrix M = ViewPort * projection * model_view;
+			
+			ndc_coord[nthvert] = m2v(M*v2m(world));
+
+
+			// return vec3f(tmp[0][0], tmp[1][0], tmp[2][0]);
+			return ndc_coord[nthvert];
+		}
+
+		bool fragment(vec2f uvP, vec3f nmA, vec3f nmB, float* zbuffer, vec3f P, int idx, float phi,  TGAColor& color, vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2){
+			if (zbuffer[idx] >= P.z)	
+					return true;
+			
+			// color = white;
+			color.r = white.r * (P.z / depth);
+			color.g = white.g * (P.z / depth);
+			color.b = white.b * (P.z / depth);
+			color.a = white.a * (P.z / depth);
+			
+			return false;
+		}
+};
 
 class GouraudShader : public Shader{
 	public:
@@ -60,6 +87,7 @@ class GouraudShader : public Shader{
 			color.r = (unsigned char)std::min(0.5 + color.r * (diff * diffusion_coeff) + color.r * 0.6 * spec, 255.0);
 			color.g = (unsigned char) std::min(0.5 + color.g * (diff * diffusion_coeff) + color.g * 0.6 * spec, 255.0);
 			color.b = (unsigned char) std::min(0.5 + color.b * (diff * diffusion_coeff) + color.b * 0.6 * spec, 255.0);
+			color.a = (unsigned char) std::min(0.5 + color.a * (diff * diffusion_coeff) + color.a * 0.6 * spec, 255.0);
 
 	
 			return false;
@@ -73,58 +101,104 @@ int main(int argc, char** argv) {
 		std::cerr << "Usage: " << argv[0] << " obj/model.obj" << std::endl;
         return 1;
 	}
-	
+
 	// const char* name = nullptr;
 	const char* specified_obj = nullptr;
 
-	TGAImage image(width, height, TGAImage::RGB);
 	
-	float* zbuffer = new float[width*height];
+	float* shadow_buffer = new float[width * height];
+	float* frame_buffer = new float[width*height];
+
 	//set default values for z-buffer
-	for (int i=width*height-1; i>=0; i--)
-		zbuffer[i] = -std::numeric_limits<float>::max();
+	for (int i=width*height-1; i>=0; i--){
+		frame_buffer[i] = -std::numeric_limits<float>::max();
+		shadow_buffer[i] = -std::numeric_limits<float>::max();
+	}
 
-	Matrix projection = Matrix::identity(4);
-	Matrix ViewPort = viewport(width/8, height/8, width*3/4, height*3/4, depth); // scale to the place where our eyes can see 
-    projection[3][2] = -1.f/(camera - center).norm();
+	Matrix ViewPort = viewport(width/8, height/8, width*3/4, height*3/4, depth);
 
-	Matrix model_view = move_camera(camera, center, vec3f(0, 1, 0));
-	Matrix M = ViewPort * projection * model_view;
+	//Following scope is for the shadow map
+	{
+		TGAImage image(width, height, TGAImage::RGB);
+		Matrix projection = Matrix::identity(4); // we do not need the perspective view for the shadow buffering
+		projection[3][2] = 0;
+		Matrix model_view = move_camera(light_direction, center, vec3f(0, 1, 0));
+		Matrix M = ViewPort * projection * model_view;
+		DepthShader shader;
 
-	for (int n = 1; n < argc; n++) {
-		char path[128] = "texture/";
-		specified_obj = argv[n];
-		strcat(path, specified_obj);
-		model = new Model(path);
+		for (int n = 1; n < argc; n++) {
+			char path[128] = "texture/";
+			specified_obj = argv[n];
+			strcat(path, specified_obj);
+			model = new Model(path);
 
-		GouraudShader shader; 
-		for (int i = 0; i < model->num_faces(); i++) {
-			vec3f world[3];
-			vec3i screen[3];
-			vec2f uvs[3];
-			std::vector<int> face = model->face(i);
+			for (int i = 0; i < model->num_faces(); i++) {
+				vec3f world[3];
+				vec3i screen[3];
+				vec2f uvs[3];
+				std::vector<int> face = model->face(i);
 
-			for(int j = 0; j < 3; j++) {
-				world[j] = model->vert(face[3*j]);
-				uvs[j] = model->uv(i, j);	
-				
-				vec3f normal_coord = model->norm(i, j);
-				Matrix normal_coord_M = v2m(normal_coord); normal_coord_M[3][0] = 0; // keep it vector
-				normal_coord_M = (projection * model_view).inverse_transpose() * normal_coord_M;
+				for(int j = 0; j < 3; j++) {
+					world[j] = model->vert(face[3*j]);
+					uvs[j] = model->uv(i, j);	
+					screen[j] = shader.vertex_shader(i, j, projection, model_view, ViewPort);
+					
+				}
 
-				normal_coord = vec3f(normal_coord_M[0][0], normal_coord_M[1][0],normal_coord_M[2][0] ); // convert it back to a vector
-				
-				shader.normals[j] = normal_coord;
-				screen[j] = shader.vertex_shader(i, j, projection, model_view, ViewPort);
+				rasterize(screen, uvs[0], uvs[1], uvs[2], shader, shadow_buffer, model, image);
 				
 			}
-
-			rasterize(screen, uvs[0], uvs[1], uvs[2], shader, zbuffer, model, image);
-			
+			delete model;
+			image.flip_vertically(); 
+			image.write_tga_file("depth.tga");
 		}
-		delete model;
 	}
-	image.flip_vertically(); 
-	image.write_tga_file("output.tga");
-	delete[] zbuffer;
+
+	// Following scope is for the fragment buffer
+	{
+		TGAImage image(width, height, TGAImage::RGB);
+		Matrix projection = Matrix::identity(4);
+		projection[3][2] = -1.f/(camera - center).norm();
+
+		Matrix model_view = move_camera(camera, center, vec3f(0, 1, 0));
+		Matrix M = ViewPort * projection * model_view;
+
+		for (int n = 1; n < argc; n++) {
+			char path[128] = "texture/";
+			specified_obj = argv[n];
+			strcat(path, specified_obj);
+			model = new Model(path);
+
+			GouraudShader shader; 
+			for (int i = 0; i < model->num_faces(); i++) {
+				vec3f world[3];
+				vec3i screen[3];
+				vec2f uvs[3];
+				std::vector<int> face = model->face(i);
+
+				for(int j = 0; j < 3; j++) {
+					world[j] = model->vert(face[3*j]);
+					uvs[j] = model->uv(i, j);	
+					
+					vec3f normal_coord = model->norm(i, j);
+					Matrix normal_coord_M = v2m(normal_coord); normal_coord_M[3][0] = 0; // keep it vector
+					normal_coord_M = (projection * model_view).inverse_transpose() * normal_coord_M;
+
+					normal_coord = vec3f(normal_coord_M[0][0], normal_coord_M[1][0],normal_coord_M[2][0] ); // convert it back to a vector
+					
+					shader.normals[j] = normal_coord;
+					screen[j] = shader.vertex_shader(i, j, projection, model_view, ViewPort);
+					
+				}
+
+				rasterize(screen, uvs[0], uvs[1], uvs[2], shader, frame_buffer, model, image);
+				
+			}
+			delete model;
+		}
+		image.flip_vertically(); 
+		image.write_tga_file("output.tga");
+	}
+	delete[] shadow_buffer;
+	delete[] frame_buffer;
 }
