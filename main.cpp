@@ -124,14 +124,13 @@ int main(int argc, char** argv) {
 		projection[3][2] = 0;
 		Matrix model_view = move_camera(light_direction, center, vec3f(0, 1, 0));
 		Matrix M = ViewPort * projection * model_view;
-		DepthShader shader;
 
 		for (int n = 1; n < argc; n++) {
 			char path[128] = "texture/";
 			specified_obj = argv[n];
 			strcat(path, specified_obj);
 			model = new Model(path);
-
+			DepthShader shader;
 			for (int i = 0; i < model->num_faces(); i++) {
 				vec3f world[3];
 				vec3i screen[3];
@@ -149,9 +148,9 @@ int main(int argc, char** argv) {
 				
 			}
 			delete model;
-			image.flip_vertically(); 
-			image.write_tga_file("depth.tga");
 		}
+		image.flip_vertically(); 
+		image.write_tga_file("depth.tga");
 	}
 
 	// Following scope is for the fragment buffer
@@ -170,6 +169,7 @@ int main(int argc, char** argv) {
 			model = new Model(path);
 
 			GouraudShader shader; 
+
 			for (int i = 0; i < model->num_faces(); i++) {
 				vec3f world[3];
 				vec3i screen[3];
