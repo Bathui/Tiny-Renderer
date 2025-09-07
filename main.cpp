@@ -1,6 +1,7 @@
 #include "rendering.h"
 #include <cstring>
 
+const float eps = 1e-5f;
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red   = TGAColor(255, 0,   0,   255);
 
@@ -10,9 +11,12 @@ const int depth = 255;
 
 const double diffusion_coeff =  1.3;
 
+float* shadow_buffer = new float[width * height];
+float* frame_buffer = new float[width*height];
+
 vec3f camera(0.25, 0.25, 0.75); // set our camera
 vec3f center(0, 0, -2);
-vec3f light_direction = vec3f(0,0,1).normalized();
+vec3f light_direction = vec3f(0,0,1).normalized(); // need to convert that into world space
 
 Model* model = nullptr;
 
@@ -46,6 +50,9 @@ class DepthShader : public Shader{
 
 class GouraudShader : public Shader{
 	public:
+		Matrix fragment_2_shadow{4,4}; 
+		
+		GouraudShader(Matrix MS): fragment_2_shadow(MS){}
 
 		vec3f vertex_shader(int iface, int nthvert, Matrix projection, Matrix model_view, Matrix ViewPort){
 
@@ -61,6 +68,16 @@ class GouraudShader : public Shader{
 		bool fragment(vec2f uvP, vec3f nmA, vec3f nmB, float* zbuffer, vec3f P, int idx, float phi,  TGAColor& color, vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2){	
 			if (zbuffer[idx] >= P.z)	
 				return true;
+			// We convert the coordinates in camera space to the light space
+			// which means convert that into the shadow buffer
+			Matrix shadow_buffer_points(4,1);
+			shadow_buffer_points =  fragment_2_shadow * shadow_buffer_points; // get the points in shadow mapping coord
+
+			vec3f sb_pts = m2v(shadow_buffer_points);
+			int idx_shadow = int(sb_pts[0]) + int(sb_pts[1]) * width;
+
+			float shadow = 0.7f + 0.3f * (shadow_buffer[idx_shadow] - sb_pts[2] < eps);
+
 			TGAColor normal_color = model->normal_Map(uvP);
 			vec3f p0p1 = ndc_coord[1] - ndc_coord[0];
 			vec3f p0p2 = ndc_coord[2] - ndc_coord[0];
@@ -84,10 +101,10 @@ class GouraudShader : public Shader{
 			
 			float spec = std::pow(std::max(reflection.z, 0.f), std::max(float(model->specular(uvP).b), 30.f));
 
-			color.r = (unsigned char)std::min(0.5 + color.r * (diff * diffusion_coeff) + color.r * 0.6 * spec, 255.0);
-			color.g = (unsigned char) std::min(0.5 + color.g * (diff * diffusion_coeff) + color.g * 0.6 * spec, 255.0);
-			color.b = (unsigned char) std::min(0.5 + color.b * (diff * diffusion_coeff) + color.b * 0.6 * spec, 255.0);
-			color.a = (unsigned char) std::min(0.5 + color.a * (diff * diffusion_coeff) + color.a * 0.6 * spec, 255.0);
+			color.r = (unsigned char)std::min(0.5 + color.r * (diff * diffusion_coeff) * shadow  + color.r * 0.6 * spec * shadow , 255.0);
+			color.g = (unsigned char) std::min(0.5 + color.g * (diff * diffusion_coeff) * shadow + color.g * 0.6 * spec * shadow, 255.0);
+			color.b = (unsigned char) std::min(0.5 + color.b * (diff * diffusion_coeff) * shadow + color.b * 0.6 * spec * shadow, 255.0);
+			color.a = (unsigned char) std::min(0.5 + color.a * (diff * diffusion_coeff) * shadow + color.a * 0.6 * spec * shadow, 255.0);
 
 	
 			return false;
@@ -106,9 +123,6 @@ int main(int argc, char** argv) {
 	const char* specified_obj = nullptr;
 
 	
-	float* shadow_buffer = new float[width * height];
-	float* frame_buffer = new float[width*height];
-
 	//set default values for z-buffer
 	for (int i=width*height-1; i>=0; i--){
 		frame_buffer[i] = -std::numeric_limits<float>::max();
@@ -140,7 +154,7 @@ int main(int argc, char** argv) {
 				for(int j = 0; j < 3; j++) {
 					world[j] = model->vert(face[3*j]);
 					uvs[j] = model->uv(i, j);	
-					screen[j] = shader.vertex_shader(i, j, projection, model_view, ViewPort);
+					screen[j] = shader.vertex_shader(i, j, projection, model_view, ViewPort);					
 					
 				}
 
@@ -154,13 +168,16 @@ int main(int argc, char** argv) {
 	}
 
 	// Following scope is for the fragment buffer
-	{
+	{	
 		TGAImage image(width, height, TGAImage::RGB);
 		Matrix projection = Matrix::identity(4);
 		projection[3][2] = -1.f/(camera - center).norm();
 
 		Matrix model_view = move_camera(camera, center, vec3f(0, 1, 0));
 		Matrix M = ViewPort * projection * model_view;
+		Matrix m_inverse = M.inverse();
+
+		Matrix MS =  M * m_inverse;
 
 		for (int n = 1; n < argc; n++) {
 			char path[128] = "texture/";
@@ -168,7 +185,7 @@ int main(int argc, char** argv) {
 			strcat(path, specified_obj);
 			model = new Model(path);
 
-			GouraudShader shader; 
+			GouraudShader shader(MS); 
 
 			for (int i = 0; i < model->num_faces(); i++) {
 				vec3f world[3];
