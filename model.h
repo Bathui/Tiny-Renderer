@@ -28,7 +28,6 @@ class Model
         vec3f norm (int iface, int nvert);
         
         std::vector<int> face(int i);
-        // const TGAImage& diffuse() const;
 
         TGAColor diffuse(vec2f uv);
         TGAColor normal_Map(vec2f uv);

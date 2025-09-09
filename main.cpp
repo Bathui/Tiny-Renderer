@@ -1,6 +1,6 @@
-#include "rendering.h"
 #include <cstring>
-
+#include <filesystem>
+#include "rendering.h"
 const float eps = 1e-5f;
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red   = TGAColor(255, 0,   0,   255);
@@ -27,7 +27,7 @@ class DepthShader : public Shader{
 			vec3f world = model->vert(face[3*nthvert]);
 			Matrix M = ViewPort * projection * model_view;
 			
-			ndc_coord[nthvert] = m2v(M*v2m(world));
+			ndc_coord[nthvert] = m2v(M*v2m(world, true));
 
 
 			// return vec3f(tmp[0][0], tmp[1][0], tmp[2][0]);
@@ -39,10 +39,10 @@ class DepthShader : public Shader{
 					return true;
 			
 			// color = white;
-			color.r = white.r * (P.z / depth);
-			color.g = white.g * (P.z / depth);
-			color.b = white.b * (P.z / depth);
-			color.a = white.a * (P.z / depth);
+			color.r = white.r * (static_cast<float>(P.z) / static_cast<float>(depth));
+			color.g = white.g * (static_cast<float>(P.z) / static_cast<float>(depth));
+			color.b = white.b * (static_cast<float>(P.z) / static_cast<float>(depth));
+			color.a = white.a * (static_cast<float>(P.z) / static_cast<float>(depth));
 			
 			return false;
 		}
@@ -60,23 +60,25 @@ class GouraudShader : public Shader{
 			vec3f world = model->vert(face[3*nthvert]);
 			
 			Matrix M = ViewPort * projection * model_view;
-			vec3f screen = m2v(M * v2m(world)); // we can divide that w at the end because viewport does not affect w
-			ndc_coord[nthvert] = m2v(projection * model_view * v2m(world));
+			// light_direction = m2v(M * v2m_vt(light_direction)).normalized();
+			vec3f screen = m2v(M * v2m(world, true)); // we can divide that w at the end because viewport does not affect w
+			ndc_coord[nthvert] = m2v(projection * model_view * v2m(world, true));
 			return screen;
 		}
 
 		bool fragment(vec2f uvP, vec3f nmA, vec3f nmB, float* zbuffer, vec3f P, int idx, float phi,  TGAColor& color, vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2){	
 			if (zbuffer[idx] >= P.z)	
 				return true;
-			// We convert the coordinates in camera space to the light space
-			// which means convert that into the shadow buffer
-			Matrix shadow_buffer_points(4,1);
+			
+			Matrix light_direction_new_basis = M_light * v2m(light_direction, false);
+			vec3f l (light_direction_new_basis[0][0], light_direction_new_basis[1][0], light_direction_new_basis[2][0]);
+			Matrix shadow_buffer_points = v2m(P, true);
 			shadow_buffer_points =  fragment_2_shadow * shadow_buffer_points; // get the points in shadow mapping coord
 
 			vec3f sb_pts = m2v(shadow_buffer_points);
 			int idx_shadow = int(sb_pts[0]) + int(sb_pts[1]) * width;
-
-			float shadow = 0.7f + 0.3f * (shadow_buffer[idx_shadow] - sb_pts[2] < eps);
+			
+			float shadow = 0.7f + 0.5f * (shadow_buffer[idx_shadow] - sb_pts[2] < eps);
 
 			TGAColor normal_color = model->normal_Map(uvP);
 			vec3f p0p1 = ndc_coord[1] - ndc_coord[0];
@@ -96,8 +98,8 @@ class GouraudShader : public Shader{
 			vec3f real_normal = color2Vec3(normal_color);
 			real_normal = Darboux2World(new_x, new_y, new_z, real_normal);
 
-			vec3f reflection = (2.0f * (real_normal * light_direction * real_normal) - light_direction).normalized();
-			float diff = std::max(real_normal * light_direction, 0.f);
+			vec3f reflection = (2.0f * (real_normal * l * real_normal) - l).normalized();
+			float diff = std::max(real_normal * l, 0.f);
 			
 			float spec = std::pow(std::max(reflection.z, 0.f), std::max(float(model->specular(uvP).b), 30.f));
 
@@ -119,14 +121,13 @@ int main(int argc, char** argv) {
         return 1;
 	}
 
-	// const char* name = nullptr;
 	const char* specified_obj = nullptr;
 
 	
 	//set default values for z-buffer
 	for (int i=width*height-1; i>=0; i--){
-		frame_buffer[i] = -std::numeric_limits<float>::max();
-		shadow_buffer[i] = -std::numeric_limits<float>::max();
+		frame_buffer[i] = std::numeric_limits<float>::min();
+		shadow_buffer[i] = std::numeric_limits<float>::min();
 	}
 
 	Matrix ViewPort = viewport(width/8, height/8, width*3/4, height*3/4, depth);
@@ -186,6 +187,7 @@ int main(int argc, char** argv) {
 			model = new Model(path);
 
 			GouraudShader shader(MS); 
+			shader.M_light = projection * model_view;
 
 			for (int i = 0; i < model->num_faces(); i++) {
 				vec3f world[3];
@@ -198,7 +200,7 @@ int main(int argc, char** argv) {
 					uvs[j] = model->uv(i, j);	
 					
 					vec3f normal_coord = model->norm(i, j);
-					Matrix normal_coord_M = v2m(normal_coord); normal_coord_M[3][0] = 0; // keep it vector
+					Matrix normal_coord_M = v2m(normal_coord, true); normal_coord_M[3][0] = 0; // keep it vector
 					normal_coord_M = (projection * model_view).inverse_transpose() * normal_coord_M;
 
 					normal_coord = vec3f(normal_coord_M[0][0], normal_coord_M[1][0],normal_coord_M[2][0] ); // convert it back to a vector

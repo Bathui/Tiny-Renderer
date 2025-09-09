@@ -49,20 +49,24 @@ vec3f baryCentric(vec3f* vertices, vec3f p){
 }
 
 vec3f m2v(Matrix m){
-	return vec3f(m[0][0]/m[3][0], m[1][0]/m[3][0], m[2][0]/m[3][0]);
+	if (m[3][0] != 0)
+		return vec3f(m[0][0]/m[3][0], m[1][0]/m[3][0], m[2][0]/m[3][0]);
+	return vec3f(m[0][0], m[1][0], m[2][0]);
 }
 
-Matrix v2m (vec3f& v) {
+Matrix v2m (vec3f& v, bool isPoint) {
 	Matrix m(4, 1);
 	
 	m[0][0] = v.x;
 	m[1][0] = v.y;
 	m[2][0] = v.z;
 
-	m[3][0] = 1;
+	
+	m[3][0] = isPoint ? 1 : 0;
 
 	return m;
 }
+
 
 Matrix viewport(int x, int y, int w, int h, int d){
 	Matrix m = Matrix::identity(4);
@@ -81,7 +85,7 @@ Matrix viewport(int x, int y, int w, int h, int d){
 Matrix move_camera(vec3f eye, vec3f center, vec3f up){
 	vec3f z = (eye - center).normalized();
 	vec3f x = (up ^ z).normalized();
-	vec3f y = up.normalized(); // if that does not work, change it afterwards
+	vec3f y = up.normalized(); 
 
 	Matrix Minv = Matrix::identity(4);
 	Matrix Tr = Matrix::identity(4);
@@ -175,7 +179,9 @@ void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader,
 			vec3i P = vec3f(A) + vec3f(B-A) * phi;
 			vec2f uvP = uvA + vec2f(uvB - uvA) * phi;
 			TGAColor color = model->diffuse(uvP);
-
+			if (P.x < 0 || P.x >= width || P.y < 0 || P.y >= height) {
+				continue; // Skip off-screen pixels
+			}
 			int idx = P.x + P.y * width;
 			bool discard = shader.fragment(uvP, nmA, nmB, zbuffer, P, idx, phi, color, screen, uv0, uv1, uv2); //need further changes here
 			if (!discard) {

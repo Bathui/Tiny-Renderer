@@ -30,7 +30,6 @@ Model::Model(const char* fileName){
         }
 
         if (prefix == "f") {
-            // std::cout<<"check"<<std::endl;
             int ver, tex, normal;
             std::vector<int> face_data;
             
@@ -66,7 +65,6 @@ Model::Model(const char* fileName){
     diffusemap.flip_vertically();
 
     //load normal mapping texture
-    // load_texture("_nm.tga", normalmap);
     load_texture("_nm_tangent.tga", normalmap);
     normalmap.flip_vertically();
 
@@ -75,9 +73,7 @@ Model::Model(const char* fileName){
     specularmap.flip_vertically();
 }
 
-// const TGAImage& Model::diffuse() const{
-//     return diffusemap;
-// }
+
 vec2f Model::uv(int iface, int nvert){
     int index = faces[iface][nvert * 3 + 1];
     vec3f v = text_verts[index];

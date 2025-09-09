@@ -10,6 +10,7 @@ vec3f baryCentric(vec3f* vertices, vec3f p);
 class Shader{
     public:
         float* varing_intensity = new float [3];
+        Matrix M_light;
         vec3f* normals = new vec3f[3];
         vec3f* ndc_coord = new vec3f[3];
 
@@ -28,7 +29,8 @@ class Shader{
 void rasterize(vec3i screen[3], vec2f uv0, vec2f uv1, vec2f uv2, Shader& shader, float *zbuffer, Model* model, TGAImage& img);
 vec3f m2v(Matrix m);
 
-Matrix v2m(vec3f& v);
+Matrix v2m(vec3f& v, bool isPoint);
+
 
 Matrix viewport(int x, int y, int w, int h, int d);
 

@@ -1,5 +1,11 @@
 # Progress Tracker of the project
 
+## Adding Shadow Mapping (no soft shadow computation)
+<div style="display: flex; gap: 20px;">
+    <img src ="result/African_shadow.png" alt="Normal Mapping" width="400">
+    <img src ="result/Diablo_shadow.png" alt="Normal Mapping" width="450">
+</div>
+
 ## Adding Specular and Ambient terms
 <div style="display: flex; gap: 20px;">
     <img src ="result/with_specular.png" alt="Normal Mapping" width="400">
